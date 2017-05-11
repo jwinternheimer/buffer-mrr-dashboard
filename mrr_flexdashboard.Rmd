@@ -1,0 +1,119 @@
+---
+title: "Buffer MRR Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: https://github.com/jwinternheimer/buffer-mrr-dashboard
+favicon: buffer-logo.png
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+# Load libraries
+library(flexdashboard); library(dplyr); library(ggplot2); 
+library(plotly); library(prophet); library(buffer)
+
+# Source the data.R file
+source("data.R")
+
+# Collect the MRR data
+mrr <- get_mrr_data()
+```
+
+Sidebar {.sidebar}
+=======================================================================
+
+Select the type of plan you would like to view MRR for.
+
+```{r}
+# Select type of time off
+selectInput(inputId = "plan_type", label = "Plan type:", multiple = TRUE,
+            choices = levels(mrr$plan), selected = c("awesome", "business"))
+```
+
+Dashboard
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Total MRR
+
+```{r warning = FALSE, message = FALSE, echo = FALSE}
+renderPlotly({
+  
+  # Calculate total MRR
+  grouped_mrr <- mrr %>%
+    filter(plan %in% input$plan_type) %>%
+    group_by(date) %>%
+    summarise(total_mrr = sum(mrr))
+  
+  # Create ggplot
+  total_mrr_plot <- ggplot(grouped_mrr, aes(x = date, y = total_mrr)) +
+    geom_line() +
+    labs(x = '', y = '', title = '')
+  
+  # Convert to plotly
+  ggplotly(total_mrr_plot)
+  
+})
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### MRR Forecast
+
+```{r warning = FALSE, message = FALSE, echo = FALSE}
+renderPlot({
+  
+  # Calculate total MRR
+  grouped_mrr <- mrr %>%
+    filter(plan %in% input$plan_type) %>%
+    group_by(date) %>%
+    summarise(total_mrr = sum(mrr)) %>%
+    arrange(date)
+  
+  # Fit prophet model
+  colnames(grouped_mrr) <- c('ds', 'y')
+  mod <- prophet(df = grouped_mrr)
+  
+  # Create future dataframe
+  future <- make_future_dataframe(mod, periods = 180)
+  
+  # Create forecast
+  forecast <- predict(mod, future)
+  
+  # Plot the forecast
+  plot(mod, forecast)
+  
+})
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### MRR by Plan
+
+```{r warning = FALSE, message = FALSE, echo = FALSE}
+renderPlotly({
+  
+  # Calculate total MRR
+  grouped_mrr <- mrr %>%
+    filter(plan %in% input$plan_type) %>%
+    group_by(date, plan) %>%
+    summarise(total_mrr = sum(mrr))
+  
+  # Create ggplot
+  mrr_by_plan <- ggplot(grouped_mrr, aes(x = date, y = total_mrr, color = plan)) +
+    geom_line() +
+    labs(x = '', y = '', title = '') 
+  
+  # Convert to plotly
+  ggplotly(mrr_by_plan)
+  
+})
+```
