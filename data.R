@@ -94,4 +94,3 @@ write_to_redshift <- function(df) {
   
 }
 
-

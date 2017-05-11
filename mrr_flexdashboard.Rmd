@@ -15,7 +15,7 @@ library(flexdashboard); library(dplyr); library(ggplot2);
 library(plotly); library(prophet); library(buffer)
 
 # Source the data.R file
-source("data.R")
+source("./data.R")
 
 # Collect the MRR data
 mrr <- get_mrr_data()
@@ -27,6 +27,7 @@ Sidebar {.sidebar}
 Select the type of plan you would like to view MRR for.
 
 ```{r}
+
 # Select type of time off
 selectInput(inputId = "plan_type", label = "Plan type:", multiple = TRUE,
             choices = levels(mrr$plan), selected = c("awesome", "business"))
@@ -41,6 +42,7 @@ Row
 ### Total MRR
 
 ```{r warning = FALSE, message = FALSE, echo = FALSE}
+
 renderPlotly({
   
   # Calculate total MRR
@@ -60,6 +62,28 @@ renderPlotly({
 })
 ```
 
+### MRR by Plan
+
+```{r warning = FALSE, message = FALSE, echo = FALSE}
+
+renderPlotly({
+  
+  # Calculate total MRR
+  grouped_mrr <- mrr %>%
+    filter(plan %in% input$plan_type) %>%
+    group_by(date, plan) %>%
+    summarise(total_mrr = sum(mrr))
+  
+  # Create ggplot
+  mrr_by_plan <- ggplot(grouped_mrr, aes(x = date, y = total_mrr, color = plan)) +
+    geom_line() +
+    labs(x = '', y = '', title = '') 
+  
+  # Convert to plotly
+  ggplotly(mrr_by_plan)
+  
+})
+```
 
 Row
 -----------------------------------------------------------------------
@@ -67,7 +91,8 @@ Row
 ### MRR Forecast
 
 ```{r warning = FALSE, message = FALSE, echo = FALSE}
-renderPlot({
+
+renderPlotly({
   
   # Calculate total MRR
   grouped_mrr <- mrr %>%
@@ -87,33 +112,11 @@ renderPlot({
   forecast <- predict(mod, future)
   
   # Plot the forecast
-  plot(mod, forecast)
+  p <- plot(mod, forecast, xlabel = '', ylabel = '')
+  
+  ggplotly(p)
   
 })
 ```
 
 
-Row
------------------------------------------------------------------------
-
-### MRR by Plan
-
-```{r warning = FALSE, message = FALSE, echo = FALSE}
-renderPlotly({
-  
-  # Calculate total MRR
-  grouped_mrr <- mrr %>%
-    filter(plan %in% input$plan_type) %>%
-    group_by(date, plan) %>%
-    summarise(total_mrr = sum(mrr))
-  
-  # Create ggplot
-  mrr_by_plan <- ggplot(grouped_mrr, aes(x = date, y = total_mrr, color = plan)) +
-    geom_line() +
-    labs(x = '', y = '', title = '') 
-  
-  # Convert to plotly
-  ggplotly(mrr_by_plan)
-  
-})
-```

@@ -1,0 +1,10 @@
+name: mrr-dashboard
+title: mrr-dashboard
+account: buffer
+server: shinyapps.io
+appId: 179992
+bundleId: 824932
+url: https://buffer.shinyapps.io/mrr-dashboard/
+when: 1494534515.257
+asMultiple: FALSE
+asStatic: FALSE
